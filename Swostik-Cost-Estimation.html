@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Swostik Construction – Cost Estimation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- Include jsPDF and AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f8; padding: 20px; }
+    h1 { text-align: center; }
+    .container { max-width: 1000px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #2563eb; color: #fff; }
+    input, select { width: 100%; padding: 6px; }
+    button { margin: 10px 5px 0 0; padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; }
+    .btn-green { background: #16a34a; color: white; }
+    .btn-blue { background: #2563eb; color: white; }
+    .btn-gray { background: #4b5563; color: white; }
+    .total { font-size: 20px; font-weight: bold; text-align: right; margin-top: 15px; }
+    .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    @media print { button { display: none; } body { background: white; } }
+  </style>
+</head>
+<body>
+
+<div style="text-align:center; margin-bottom:10px;">
+  <img src="logo.jpg" alt="Swostik Construction Logo" style="max-width:140px; margin-bottom:10px;" />
+</div>
+<h1>Swostik Construction<br>House Preparation & Cost Estimation</h1>
+
+<div class="container" id="printArea">
+
+  <div class="info-grid">
+    <div><label><strong>User / Engineer</strong></label><input id="userName"></div>
+    <div><label><strong>Client</strong></label><input id="clientName"></div>
+    <div><label><strong>Project</strong></label><input id="projectName" value="House Construction"></div>
+    <div><label><strong>Location</strong></label><input id="location" value="Kathmandu, Nepal"></div>
+    <div><label><strong>Date</strong></label><input id="date" type="date"></div>
+  </div>
+
+  <table id="costTable">
+    <thead>
+      <tr><th>Item</th><th>Unit</th><th>Qty</th><th>Rate (NPR)</th><th>Amount</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Excavation</td><td>Cu.m</td><td><input type="number"></td><td><input type="number" value="800"></td><td class="amount">0</td></tr>
+      <tr><td>Soling</td><td>Sq.m</td><td><input type="number"></td>
+        <td>
+          <select onchange="this.dataset.rate=this.value">
+            <option value="900">Stone 900</option>
+            <option value="1200">Brick 1200</option>
+          </select>
+        </td>
+        <td class="amount">0</td>
+      </tr>
+      <tr><td>PCC</td><td>Sq.m</td><td><input type="number"></td><td><input type="number" value="1200"></td><td class="amount">0</td></tr>
+      <tr><td>Reinforcement Steel</td><td>Kg</td><td><input type="number"></td><td><input type="number" value="135"></td><td class="amount">0</td></tr>
+      <tr><td>RCC Concrete</td><td>Cu.m</td><td><input type="number"></td><td><input type="number" value="15000"></td><td class="amount">0</td></tr>
+      <tr><td>Brick Work</td><td>Sq.m</td><td><input type="number"></td><td><input type="number" value="2500"></td><td class="amount">0</td></tr>
+      <tr><td>Plaster Work</td><td>Sq.m</td><td><input type="number"></td><td><input type="number" value="450"></td><td class="amount">0</td></tr>
+      <tr><td>Floor Finishing</td><td>Sq.m</td><td><input type="number"></td><td><input type="number" value="1800"></td><td class="amount">0</td></tr>
+    </tbody>
+  </table>
+
+  <button class="btn-green" onclick="calculateCost()">Calculate</button>
+  <button class="btn-blue" onclick="exportCSV()">Export Excel (CSV)</button>
+  <button class="btn-blue" onclick="savePDF()">Save as PDF</button>
+  <button class="btn-gray" onclick="window.print()">Print</button>
+
+  <div class="total" id="totalCost">Total: NPR 0</div>
+</div>
+
+<script>
+function calculateCost() {
+  let total = 0;
+  document.querySelectorAll('#costTable tbody tr').forEach(row => {
+    const qty = parseFloat(row.cells[2].querySelector('input')?.value || 0);
+    let rateInput = row.cells[3].querySelector('input');
+    let rateSelect = row.cells[3].querySelector('select');
+    let rate = rateInput ? parseFloat(rateInput.value || 0) : parseFloat(rateSelect.value || 0);
+    const amount = qty * rate;
+    row.cells[4].innerText = amount.toFixed(2);
+    total += amount;
+  });
+  document.getElementById('totalCost').innerText = 'Total: NPR ' + total.toFixed(2);
+}
+
+function exportCSV() {
+  calculateCost();
+  let csv = 'User,Client,Project,Location,Date\n';
+  csv += `${userName.value},${clientName.value},${projectName.value},${location.value},${date.value}\n\n`;
+  csv += 'Item,Unit,Qty,Rate,Amount\n';
+
+  document.querySelectorAll('#costTable tbody tr').forEach(row => {
+    const item = row.cells[0].innerText;
+    const unit = row.cells[1].innerText;
+    const qty = row.cells[2].querySelector('input').value || 0;
+    let rate = row.cells[3].querySelector('input')?.value || row.cells[3].querySelector('select')?.value || 0;
+    const amount = row.cells[4].innerText;
+    csv += `${item},${unit},${qty},${rate},${amount}\n`;
+  });
+
+  csv += `\nTotal,,,,${document.getElementById('totalCost').innerText.replace('Total: NPR ','')}`;
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'Swostik_Construction_Estimate.csv';
+  link.click();
+}
+
+function savePDF() {
+  calculateCost();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // Add title
+  doc.setFontSize(16);
+  doc.text("Swostik Construction – House Preparation & Cost Estimation", 14, 15);
+
+  // Project info
+  doc.setFontSize(12);
+  const user = document.getElementById('userName').value;
+  const client = document.getElementById('clientName').value;
+  const project = document.getElementById('projectName').value;
+  const location = document.getElementById('location').value;
+  const date = document.getElementById('date').value;
+  doc.text(`User/Engineer: ${user}`, 14, 25);
+  doc.text(`Client: ${client}`, 14, 32);
+  doc.text(`Project: ${project}`, 14, 39);
+  doc.text(`Location: ${location}`, 14, 46);
+  doc.text(`Date: ${date}`, 14, 53);
+
+  // Table
+  const rows = [];
+  document.querySelectorAll('#costTable tbody tr').forEach(row => {
+    const item = row.cells[0].innerText;
+    const unit = row.cells[1].innerText;
+    const qty = row.cells[2].querySelector('input').value || 0;
+    let rate = row.cells[3].querySelector('input')?.value || row.cells[3].querySelector('select')?.value || 0;
+    const amount = row.cells[4].innerText;
+    rows.push([item, unit, qty, rate, amount]);
+  });
+
+  doc.autoTable({
+    head: [['Item', 'Unit', 'Qty', 'Rate (NPR)', 'Amount (NPR)']],
+    body: rows,
+    startY: 60,
+    theme: 'grid'
+  });
+
+  // Total
+  doc.text(`Total: NPR ${document.getElementById('totalCost').innerText.replace('Total: NPR ','')}`, 14, doc.lastAutoTable.finalY + 10);
+
+  // Save PDF
+  doc.save('Swostik_Construction_Estimate.pdf');
+}
+</script>
+
+</body>
+</html>
